@@ -122,7 +122,6 @@ PPCHAT_API InputQueue create_input_queue(size_t max_items, size_t item_size);
 PPCHAT_API bool get_next_queue(InputQueue *queue, char **out_queue);
 PPCHAT_API bool queue_input(InputQueue *queue, char *input);
 PPCHAT_API void destroy_input_queue(InputQueue *queue);
-PPCHAT_API bool get_next_console_input(char **out_input);
 
 PPCHAT_API tm get_current_local_time();
 PPCHAT_API void log_message(FILE *stream, const char *format, ...);

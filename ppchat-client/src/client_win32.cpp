@@ -41,12 +41,6 @@ bool get_next_console_input(char **out_input) {
 	return got_input;
 }
 
-int clamp(int min_value, int max_value, int value) {
-	if (value < min_value) return min_value;
-	if (value > max_value) return max_value;
-	return value;
-}
-
 DWORD CALLBACK listen_for_incoming_network_data(void *context) {
 	SocketContext *ctx = static_cast<SocketContext *>(context);
 
