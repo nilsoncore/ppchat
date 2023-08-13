@@ -1,13 +1,21 @@
-REM Windows build script file
-REM Usage:
-REM     "build.bat" or "build.bat all" - Execute both Debug and Release builds;
-REM     "build.bat debug" - Execute Debug build;
-REM     "build.bat release" - Execute Release build.
-
 @echo OFF
 
-call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat" x64
-echo.
+REM Windows MSBuild build script file
+REM Usage:
+REM "build" or "build all" - Execute both Debug and Release builds;
+REM "build debug" - Execute Debug build;
+REM "build release" - Execute Release build.
+
+REM Important note:
+REM This build script assumes that the path to the msbuild.exe file is provided.
+REM However, this is not the case by default.  In order to add it to
+REM default path list (PATH system variable on Windows), you need to open:
+REM "Settings -> System -> Advanced system settings -> Environment Variables".
+REM There would be User variables and System variables.  It is recommended
+REM to addthe path to User variables.  Click "Edit" button under User variables
+REM section, and then add the path to the folder containing msbuild.exe file.
+REM For example, for Visual Studio 2019 Community the path is:
+REM "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Current\Bin\".
 
 set build_debug=0
 set build_release=0
@@ -36,17 +44,9 @@ echo.
 echo --- Debug build ---
 echo.
 
-echo [ppchat-shared] Building debug shared dll:
-devenv "ppchat.sln" /build Debug /project ppchat-shared /nologo
+msbuild "ppchat.sln" -nologo -nowarn:MSB8028 -property:Configuration=Debug;Platform=x64 -t:ppchat-shared:rebuild;ppchat-server:rebuild;ppchat-client:rebuild
 echo.
 
-echo [ppchat-server] Building debug server:
-devenv "ppchat.sln" /build Debug /project ppchat-server /nologo
-echo.
-
-echo [ppchat-client] Building debug client:
-devenv "ppchat.sln" /build Debug /project ppchat-client /nologo
-echo.
 )
 
 IF %build_release%==1 (
@@ -57,19 +57,10 @@ echo.
 echo --- Release build ---
 echo.
 
-echo [ppchat-shared] Building release shared dll:
-devenv "ppchat.sln" /build Release /project ppchat-shared /nologo
+msbuild "ppchat.sln" -nologo -nowarn:MSB8028 -property:Configuration=Release;Platform=x64 -t:ppchat-shared:rebuild;ppchat-server:rebuild;ppchat-client:rebuild
 echo.
 
-echo [ppchat-server] Building release server:
-devenv "ppchat.sln" /build Release /project ppchat-server /nologo
-echo.
-
-echo [ppchat-client] Building release client:
-devenv "ppchat.sln" /build Release /project ppchat-client /nologo
-echo.
 )
 
-echo.
 echo All builds completed.
 echo.
