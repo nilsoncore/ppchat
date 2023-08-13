@@ -29,54 +29,54 @@
 // It could be done in normal function but it would require two passes to
 // format the log message and then format that log message with timestamp.
 #define log(format, ...) {                       \
-	tm __my_log_time = get_current_local_time(); \
-	log_message(                                 \
-		stdout,                                  \
-		"[%02d:%02d:%02d] " format "\n",         \
-		__my_log_time.tm_hour,                   \
-		__my_log_time.tm_min,                    \
-		__my_log_time.tm_sec,                    \
-		__VA_ARGS__                              \
-	);                                           \
+    tm __my_log_time = get_current_local_time(); \
+    log_message(                                 \
+        stdout,                                  \
+        "[%02d:%02d:%02d] " format "\n",         \
+        __my_log_time.tm_hour,                   \
+        __my_log_time.tm_min,                    \
+        __my_log_time.tm_sec,                    \
+        __VA_ARGS__                              \
+    );                                           \
 }
 
 // Same as `log(format, ...)` macro, but prints into standard error.
 #define log_warning(format, ...) {               \
-	tm __my_log_time = get_current_local_time(); \
-	log_message(                                 \
-		stderr,                                  \
-		CONSOLE_COLOR_YELLOW "[%02d:%02d:%02d] WARNING: " format CONSOLE_COLOR_RESET "\n", \
-		__my_log_time.tm_hour,                   \
-		__my_log_time.tm_min,                    \
-		__my_log_time.tm_sec,                    \
-		__VA_ARGS__                              \
-	);                                           \
+    tm __my_log_time = get_current_local_time(); \
+    log_message(                                 \
+        stderr,                                  \
+        CONSOLE_COLOR_YELLOW "[%02d:%02d:%02d] WARNING: " format CONSOLE_COLOR_RESET "\n", \
+        __my_log_time.tm_hour,                   \
+        __my_log_time.tm_min,                    \
+        __my_log_time.tm_sec,                    \
+        __VA_ARGS__                              \
+    );                                           \
 }
 
 // Same as `log(format, ...)` macro, but prints into standard error.
 #define log_error(format, ...) {                 \
 	tm __my_log_time = get_current_local_time(); \
 	log_message(                                 \
-		stderr,                                  \
-		CONSOLE_COLOR_RED "[%02d:%02d:%02d] ERROR: " format CONSOLE_COLOR_RESET "\n", \
-		__my_log_time.tm_hour,                   \
-		__my_log_time.tm_min,                    \
-		__my_log_time.tm_sec,                    \
-		__VA_ARGS__                              \
+        stderr,                                  \
+        CONSOLE_COLOR_RED "[%02d:%02d:%02d] ERROR: " format CONSOLE_COLOR_RESET "\n", \
+        __my_log_time.tm_hour,                   \
+        __my_log_time.tm_min,                    \
+        __my_log_time.tm_sec,                    \
+        __VA_ARGS__                              \
 	);                                           \
 }
 
 #ifdef _DEBUG
 #define log_debug(format, ...) {                 \
-	tm __my_log_time = get_current_local_time(); \
-	log_message(                                 \
-		stdout,                                  \
-		CONSOLE_COLOR_GRAY "[%02d:%02d:%02d] DEBUG: " format CONSOLE_COLOR_RESET "\n", \
-		__my_log_time.tm_hour,                   \
-		__my_log_time.tm_min,                    \
-		__my_log_time.tm_sec,                    \
-		__VA_ARGS__                              \
-	);                                           \
+    tm __my_log_time = get_current_local_time(); \
+    log_message(                                 \
+        stdout,                                  \
+        CONSOLE_COLOR_GRAY "[%02d:%02d:%02d] DEBUG: " format CONSOLE_COLOR_RESET "\n", \
+        __my_log_time.tm_hour,                   \
+        __my_log_time.tm_min,                    \
+        __my_log_time.tm_sec,                    \
+        __VA_ARGS__                              \
+    );                                           \
 }
 #else /* _DEBUG */
 #define log_debug(format, ...)
@@ -85,8 +85,8 @@
 // Prints a provided error message through macro `log_error()`
 // and exits process with error code `EXIT_FAILURE`.
 #define exit_with_error(format, ...) { \
-	log_error(format, __VA_ARGS__);    \
-	exit_process_with_error();         \
+    log_error(format, __VA_ARGS__);    \
+    exit_process_with_error();         \
 }                                      \
 
 const char *PPCHAT_DEFAULT_PORT = "1337";
