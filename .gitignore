@@ -1,0 +1,14 @@
+# Visual Studio project cache folder.
+# It contains a bunch of stuff and usually weighs a lot.
+# This cache gets generated automatically anyway, so we don't need to store it.
+.vs/
+
+# Visual Studio project user settings.
+# It includes stuff like "show all files" in solution explorer, and other.
+# We don't want to keep this, as developers may have their own preferences.
+*.vcxproj.user
+
+# Folder where build generated files are placed.
+# No need to store it since it will be constantly overriden every time
+# the project is built and we don't want to store binary files anyway.
+build/
