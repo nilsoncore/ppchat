@@ -44,7 +44,7 @@ echo.
 echo --- Debug build ---
 echo.
 
-msbuild "ppchat.sln" -nologo -nowarn:MSB8028 -property:Configuration=Debug;Platform=x64 -t:ppchat-shared:rebuild;ppchat-server:rebuild;ppchat-client:rebuild
+msbuild "ppchat.sln" -nologo -nowarn:MSB8028 -property:Configuration=Debug -property:Platform=x64 -t:ppchat-shared:rebuild -t:ppchat-server:rebuild -t:ppchat-client:rebuild
 echo.
 
 )
@@ -57,7 +57,7 @@ echo.
 echo --- Release build ---
 echo.
 
-msbuild "ppchat.sln" -nologo -nowarn:MSB8028 -property:Configuration=Release;Platform=x64 -t:ppchat-shared:rebuild;ppchat-server:rebuild;ppchat-client:rebuild
+msbuild "ppchat.sln" -nologo -nowarn:MSB8028 -property:Configuration=Release -property:Platform=x64 -t:ppchat-shared:rebuild -t:ppchat-server:rebuild -t:ppchat-client:rebuild
 echo.
 
 )

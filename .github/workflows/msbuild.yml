@@ -37,7 +37,7 @@ jobs:
       working-directory: ${{env.GITHUB_WORKSPACE}}
       # Add additional options to the MSBuild command line here (like platform or verbosity level).
       # See https://docs.microsoft.com/visualstudio/msbuild/msbuild-command-line-reference
-      run: msbuild "ppchat.sln" -nologo -nowarn:MSB8028 -property:Configuration=Debug;Platform=x64 -t:ppchat-shared:rebuild;ppchat-server:rebuild;ppchat-client:rebuild
+      run: msbuild "ppchat.sln" -nologo -nowarn:MSB8028 -property:Configuration=Debug -property:Platform=x64 -t:ppchat-shared:rebuild -t:ppchat-server:rebuild -t:ppchat-client:rebuild
 
   build_release:
     runs-on: windows-latest
@@ -52,5 +52,5 @@ jobs:
       working-directory: ${{env.GITHUB_WORKSPACE}}
       # Add additional options to the MSBuild command line here (like platform or verbosity level).
       # See https://docs.microsoft.com/visualstudio/msbuild/msbuild-command-line-reference
-      run: msbuild "ppchat.sln" -nologo -nowarn:MSB8028 -property:Configuration=Release;Platform=x64 -t:ppchat-shared:rebuild;ppchat-server:rebuild;ppchat-client:rebuild
+      run: msbuild "ppchat.sln" -nologo -nowarn:MSB8028 -property:Configuration=Release -property:Platform=x64 -t:ppchat-shared:rebuild -t:ppchat-server:rebuild -t:ppchat-client:rebuild
 
