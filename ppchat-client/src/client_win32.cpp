@@ -222,6 +222,11 @@ void poll_console_input() {
 
 			} else if (strcmp(command, "/disconnect") == 0) {
 
+				if (g_client_socket.handle == INVALID_SOCKET) {
+					log("You are not connected to any server.");
+					continue;
+				}
+
 				int disconnect_error = 0;
 				bool disconnected = ppchat_disconnect(&g_client_socket, SD_SEND, &disconnect_error);
 				if (!disconnected) {
@@ -230,7 +235,6 @@ void poll_console_input() {
 				}
 
 				log("Disconnected from '%s:%s'.", g_connected_server_ip, g_connected_server_port);
-				g_client_socket.handle = INVALID_SOCKET;
 				memset(g_connected_server_ip, 0, sizeof(g_connected_server_ip));
 				memset(g_connected_server_port, 0, sizeof(g_connected_server_port));
 
