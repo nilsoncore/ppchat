@@ -265,6 +265,7 @@ int main(int arguments_count, char *arguments[]) {
 
 	while (!g_quit) {
 		poll_console_input();
+		Sleep(10);
 	}
 
 	if (g_client_socket.handle != INVALID_SOCKET)
