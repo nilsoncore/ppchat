@@ -77,16 +77,27 @@ DWORD CALLBACK listen_for_incoming_network_data(void *context) {
 				default: {
 					log_error("Couldn't receive network data. Error: %d - %s", error, get_error_description(error, g_error_message, sizeof(g_error_message)));
 				};
-				
-				ppchat_close_socket(ctx->socket);
+			}
+
+			// ppchat_close_socket(ctx->socket);
+			int disconnect_error;
+			bool disconnected = ppchat_disconnect(&socket, SD_SEND, &disconnect_error);
+			if (!disconnected) {
+				log_error("Couldn't disconnect from '%s'. Error: %d - %s", ctx->client_ip, disconnect_error, get_error_description(disconnect_error, g_error_message, sizeof(g_error_message)));
 			}
 
 		} else if (bytes_received == 0) {
 		
 			/* Connection was gratefully closed. */
 		
-			ppchat_close_socket(ctx->socket);
 			log("Connection with '%s' has been closed.", ctx->client_ip);
+
+			// ppchat_close_socket(ctx->socket);
+			int disconnect_error;
+			bool disconnected = ppchat_disconnect(&socket, SD_SEND, &disconnect_error);
+			if (!disconnected) {
+				log_error("Couldn't disconnect from '%s'. Error: %d - %s", ctx->client_ip, disconnect_error, get_error_description(disconnect_error, g_error_message, sizeof(g_error_message)));
+			}
 
 		} else {
 		

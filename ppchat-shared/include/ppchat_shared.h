@@ -113,6 +113,8 @@ PPCHAT_API int ppchat_listen(Socket socket, int max_connections);
 PPCHAT_API Socket ppchat_accept(Socket socket, sockaddr *address, int *address_length);
 PPCHAT_API Socket ppchat_connect(const char *ip, const char *port, int *out_error);
 PPCHAT_API bool ppchat_disconnect(Socket *socket, int disconnect_method, int *out_error);
+PPCHAT_API int ppchat_set_socket_option(Socket socket, int level, int option, const char *option_value, int option_length);
+PPCHAT_API int ppchat_get_socket_option(Socket socket, int level, int option, char *option_value, int *option_length);
 PPCHAT_API int ppchat_receive(Socket socket, char *receive_buffer, int receive_buffer_size, int flags);
 PPCHAT_API int ppchat_close_socket(Socket *socket);
 PPCHAT_API int ppchat_send(Socket socket, char *send_buffer, int send_buffer_size, int flags);

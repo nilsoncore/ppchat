@@ -77,19 +77,23 @@ DWORD CALLBACK listen_for_incoming_connections(void *context) {
     (void)context;
 
     addrinfo hints = { };
-
     // ai - address info.
-    hints.ai_family = AF_INET;
+    
+    // ai - address info.
+    hints.ai_family = AF_INET6;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = IPPROTO_TCP;
+
+    // MSDN: "Setting the AI_PASSIVE flag indicates the caller intends to
+    // use the returned socket address structure in a call to the bind function."
     hints.ai_flags = AI_PASSIVE;
     
     addrinfo *server;
     int server_address_info_result = ppchat_getaddrinfo(
         /* Node name (IP)      */ NULL,
         /* Service name (port) */ PPCHAT_DEFAULT_PORT,
-        /* Address info hints  */ &hints, // Includes: address family, socket type, protocol.
-        /* Result array        */ &server
+        /* Address info hints  */ &hints,
+        /* Result array        */ &server  // Iteration through array of results is done by result->ai_next.
     );
     if (server_address_info_result != 0) {
         exit_with_error("Couldn't get server address info. Error: %d - %s", server_address_info_result, get_error_description(server_address_info_result, g_error_message, sizeof(g_error_message)));
@@ -99,6 +103,16 @@ DWORD CALLBACK listen_for_incoming_connections(void *context) {
     if (listen_socket.handle == INVALID_SOCKET) {
         int error = get_last_socket_error();
         exit_with_error("Couldn't create listen socket. Error: %d - %s", error, get_error_description(error, g_error_message, sizeof(g_error_message)));
+    }
+    
+    // MSDN: "IPV6_V6ONLY - When this value is zero, a socket created for the AF_INET6 address family
+    // can be used to send and receive packets to and from an IPv6 address or an IPv4 address.
+    // Note that the ability to interact with an IPv4 address requires the use of IPv4 mapped addresses."
+    DWORD ipv6_only = 0;
+    int ipv6_only_set_result = ppchat_set_socket_option(listen_socket, IPPROTO_IPV6, IPV6_V6ONLY, (const char *) &ipv6_only, sizeof(ipv6_only));
+    if (ipv6_only_set_result == SOCKET_ERROR) {
+        int error = get_last_socket_error();
+        log_error("Couldn't turn off IPV6_V6ONLY. This means that no connection to IPv4 address can be made. Error: %d - %s", error, get_error_description(error, g_error_message, sizeof(g_error_message)));
     }
 
     int bind_result = ppchat_bind(listen_socket, server->ai_addr, (int) server->ai_addrlen);
@@ -115,9 +129,8 @@ DWORD CALLBACK listen_for_incoming_connections(void *context) {
         exit_with_error("Couldn't listen on listen socket. Error: %d - %s", error, get_error_description(error, g_error_message, sizeof(g_error_message)));
     }
 
-
     while (!g_quit) {
-        sockaddr_in client_address = { };
+        sockaddr_in6 client_address = { };
         int client_address_size = sizeof(client_address);
         Socket client_socket = ppchat_accept(listen_socket, (sockaddr *) &client_address, &client_address_size);
         if (client_socket.handle == INVALID_SOCKET) {
@@ -126,7 +139,7 @@ DWORD CALLBACK listen_for_incoming_connections(void *context) {
         }
 
         char client_ip[INET6_ADDRSTRLEN] = { };
-        const char *client_ip_result = ppchat_inet_ntop(hints.ai_family, &client_address.sin_addr, client_ip, sizeof(client_ip));
+        const char *client_ip_result = ppchat_inet_ntop(AF_INET6, &client_address.sin6_addr, client_ip, sizeof(client_ip));
         if (client_ip_result != client_ip) {
             int error = get_last_socket_error();
             exit_with_error("Couldn't convert client network address to text form. Error: %d - %s", error, get_error_description(error, g_error_message, sizeof(g_error_message)));

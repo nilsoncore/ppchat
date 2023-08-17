@@ -1,6 +1,7 @@
 #include "../include/ppchat_shared.h"
 
 #include <stdlib.h>
+#include <assert.h>
 
 // Need to link with
 #pragma comment (lib, "Ws2_32.lib")
@@ -133,25 +134,18 @@ Socket ppchat_accept(Socket socket, sockaddr *address, int *address_length) {
 	return result_socket;
 }
 
-Socket ppchat_connect(const char *server_ip, const char *server_port, int *out_error) {
+Socket ppchat_connect_with_hints(const char *server_ip, const char *server_port, int *out_error, addrinfo *hints) {
 	Socket socket;
 	socket.handle = INVALID_SOCKET;
-
-	addrinfo hints = { };
-	// ai - address info.
-	hints.ai_family = AF_INET; // AF_INET - IPv4; AF_INET6 - IPv6.
-	hints.ai_socktype = SOCK_STREAM;
-	hints.ai_protocol = IPPROTO_TCP;
 
 	addrinfo *available_server_addresses = NULL;
 	int server_address_info_result = getaddrinfo(
 		/* Node name (IP)      */ server_ip,
 		/* Service name (port) */ server_port,
-		/* Address info hints  */ &hints, // Includes: address family, socket type, protocol.
+		/* Address info hints  */ hints, // Includes: address family, socket type, protocol.
 		/* Result array        */ &available_server_addresses // Iteration through array of results is done by result->ai_next.
 	);
 	if (server_address_info_result != 0) {
-		// printf("Couldn't get server address info. Error: %d\n", server_address_info_result);
 		if (out_error)
 			*out_error = server_address_info_result;
 
@@ -194,6 +188,96 @@ Socket ppchat_connect(const char *server_ip, const char *server_port, int *out_e
 		*out_error = error;
 
 	return socket;
+}
+Socket ppchat_connect(const char *server_ip, const char *server_port, int *out_error) {
+	Socket socket;
+	socket.handle = INVALID_SOCKET;
+
+	addrinfo hints = { };
+
+	// ai - address info.
+	hints.ai_family = AF_INET6;
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_protocol = IPPROTO_TCP;
+
+	// MSDN: "If the AI_V4MAPPED bit is set and a request for IPv6 addresses fails,
+	// a name service request is made for IPv4 addresses and these addresses are
+	// converted to IPv4-mapped IPv6 address format."
+	hints.ai_flags |= AI_V4MAPPED;
+
+	// MSDN: "When the AI_CANONNAME bit is set and the getaddrinfo function returns success,
+	// the ai_canonname member in the ppResult parameter points to a NULL-terminated string
+	// that contains the canonical name of the specified node."
+	hints.ai_flags |= AI_CANONNAME;
+
+	addrinfo *available_server_addresses = NULL;
+	int server_address_info_result = getaddrinfo(
+		/* Node name (IP)      */ server_ip,
+		/* Service name (port) */ server_port,
+		/* Address info hints  */ &hints,
+		/* Result array        */ &available_server_addresses // Iteration through array of results is done by result->ai_next.
+	);
+	if (server_address_info_result != 0) {
+		if (out_error)
+			*out_error = server_address_info_result;
+
+		return socket;
+	}
+
+	addrinfo *server = NULL;
+	int error = 0;
+	for (server = available_server_addresses; server != NULL; server = server->ai_next) {
+		socket.handle = WSASocketW(
+			/* Address family */ server->ai_family,
+			/* Socket type    */ server->ai_socktype,
+			/* Protocol       */ server->ai_protocol,
+			/* Protocol info  */ NULL,
+			/* Socket group   */ NULL,
+			/* Flags          */ WSA_FLAG_OVERLAPPED
+		);
+		if (socket.handle == INVALID_SOCKET) {
+			error = get_last_socket_error();
+			log_error("Couldn't create socket. Error: %d - %s", error, get_error_description(error, g_error_message, sizeof(g_error_message)));
+			if (out_error)
+				*out_error = error;
+
+			return socket;
+		}
+
+		// MSDN: "IPV6_V6ONLY - When this value is zero, a socket created for the AF_INET6 address family
+		// can be used to send and receive packets to and from an IPv6 address or an IPv4 address.
+		// Note that the ability to interact with an IPv4 address requires the use of IPv4 mapped addresses."
+		DWORD ipv6_only = 0;
+		int ipv6_only_set_result = ppchat_set_socket_option(socket, IPPROTO_IPV6, IPV6_V6ONLY, (const char *) &ipv6_only, sizeof(ipv6_only));
+		if (ipv6_only_set_result == SOCKET_ERROR) {
+			int error = get_last_socket_error();
+			log_error("Couldn't turn off IPV6_V6ONLY. This means that no connection to an IPv4 address can be made. Error: %d - %s", error, get_error_description(error, g_error_message, sizeof(g_error_message)));
+		}
+
+		int connection_result = connect(socket.handle, server->ai_addr, (int) server->ai_addrlen);
+		if (connection_result == SOCKET_ERROR) {
+			error = get_last_socket_error();
+			ppchat_close_socket(&socket);
+			continue;
+		}
+
+		break;
+	}
+
+	freeaddrinfo(available_server_addresses);
+
+	if (out_error)
+		*out_error = error;
+
+	return socket;
+}
+
+int ppchat_set_socket_option(Socket socket, int level, int option, const char *option_value, int option_length) {
+	return setsockopt(socket.handle, level, option, option_value, option_length);
+}
+
+int ppchat_get_socket_option(Socket socket, int level, int option, char *option_value, int *option_length) {
+	return getsockopt(socket.handle, level, option, option_value, option_length);
 }
 
 bool ppchat_disconnect(Socket *socket, int disconnect_method, int *out_error) {
@@ -244,7 +328,7 @@ BOOL WINAPI DllMain(HINSTANCE dll_instance, DWORD calling_reason, LPVOID reserve
 			);
 			if (startup_result != 0) {
 				int error = WSAGetLastError();
-				log_error("Couldn't initialize sockets. Error: %d - %s", error, get_error_description(error));
+				log_error("Couldn't initialize sockets. Error: %d - %s", error, get_error_description(error, g_error_message, sizeof(g_error_message)));
 				return FALSE;
 			}
 
