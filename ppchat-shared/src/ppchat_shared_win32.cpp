@@ -7,6 +7,8 @@
 #pragma comment (lib, "Mswsock.lib")
 #pragma comment (lib, "AdvApi32.lib")
 
+static char g_error_message[PPCHAT_ERROR_MESSAGE_BUFFER_SIZE] = { };
+
 InputQueue create_input_queue(size_t max_items, size_t item_size) {
 	InputQueue queue;
 
@@ -93,21 +95,18 @@ int clamp(int min_value, int max_value, int value) {
 	return value;
 }
 
-char *get_error_description(int error) {
-	char message[256] = { };
+char *get_error_description(int error, char *out_message, size_t message_length) {
 	DWORD written_without_null_char = FormatMessageA(
-		/* Flags               */ FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+		/* Flags               */ FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_MAX_WIDTH_MASK,
 		/* Source              */ NULL,
 		/* Error code          */ error,
 		/* Message language    */ MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-		/* Message buffer      */ message,
-		/* Message buffer size */ sizeof(message),
-		/* Arguments           */ NULL);
+		/* Message buffer      */ out_message,
+		/* Message buffer size */ message_length,
+		/* Arguments           */ NULL
+	);
 
-	// Replace new line character with terminating one.
-	message[clamp(0, written_without_null_char, written_without_null_char - 1)] = '\0';
-
-	return message;
+	return out_message;
 }
 
 void exit_process_with_error() {
@@ -171,8 +170,8 @@ Socket ppchat_connect(const char *server_ip, const char *server_port, int *out_e
 			/* Flags          */ WSA_FLAG_OVERLAPPED
 		);
 		if (socket.handle == INVALID_SOCKET) {
-			error = WSAGetLastError();
-			log_error("Couldn't create socket. Error: %d - %s", error, get_error_description(error));
+			error = get_last_socket_error();
+			log_error("Couldn't create socket. Error: %d - %s", error, get_error_description(error, g_error_message, sizeof(g_error_message)));
 			if (out_error)
 				*out_error = error;
 

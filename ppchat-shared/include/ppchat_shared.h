@@ -66,6 +66,7 @@ const char *PPCHAT_DEFAULT_PORT = "1337";
 const int PPCHAT_RECEIVE_BUFFER_SIZE = 4096;
 const int PPCHAT_INPUT_QUEUE_ITEM_SIZE = 256;
 const int PPCHAT_INPUT_QUEUE_MAX_ITEMS = 4;
+const int PPCHAT_ERROR_MESSAGE_BUFFER_SIZE = 256;
 
 typedef struct InputQueue {
 	CRITICAL_SECTION critical_section;
@@ -100,7 +101,7 @@ PPCHAT_API tm get_current_local_time();
 PPCHAT_API void log_message(FILE *stream, const char *format, ...);
 
 PPCHAT_API int get_last_socket_error();
-PPCHAT_API char *get_error_description(int error);
+PPCHAT_API char *get_error_description(int error, char *out_message, size_t message_length);
 
 PPCHAT_API void exit_process_with_error();
 

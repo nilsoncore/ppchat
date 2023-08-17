@@ -7,7 +7,9 @@ const char *DEFAULT_FILE_SAVE_FOLDER = "D:/Downloads/";
 InputQueue g_input_queue;
 Socket g_client_socket = { INVALID_SOCKET };
 
-char g_connected_server_ip[16] = { };
+char g_error_message[PPCHAT_ERROR_MESSAGE_BUFFER_SIZE] = { };
+
+char g_connected_server_ip[INET6_ADDRSTRLEN] = { };
 char g_connected_server_port[6] = { };
 
 bool g_quit = false;
@@ -73,7 +75,7 @@ DWORD CALLBACK listen_for_incoming_network_data(void *context) {
 					continue;
 				}
 				default: {
-					log_error("Couldn't receive network data. Error: %d - %s", error, get_error_description(error));
+					log_error("Couldn't receive network data. Error: %d - %s", error, get_error_description(error, g_error_message, sizeof(g_error_message)));
 				};
 				
 				ppchat_close_socket(ctx->socket);
@@ -83,8 +85,8 @@ DWORD CALLBACK listen_for_incoming_network_data(void *context) {
 		
 			/* Connection was gratefully closed. */
 		
-			log("Connection with '%s' has been closed.", *ctx->client_ip);
 			ppchat_close_socket(ctx->socket);
+			log("Connection with '%s' has been closed.", ctx->client_ip);
 
 		} else {
 		
@@ -177,7 +179,7 @@ void poll_console_input() {
 					if (connection_error == 0) {
 						log("Couldn't connect to server '%s:%s'.", server_ip, server_port);
 					} else {
-						log_error("Couldn't connect to server '%s:%s'. Error: %d - %s", server_ip, server_port, connection_error, get_error_description(connection_error));
+						log_error("Couldn't connect to server '%s:%s'. Error: %d - %s", server_ip, server_port, connection_error, get_error_description(connection_error, g_error_message, sizeof(g_error_message)));
 					}
 				}
 
@@ -197,7 +199,7 @@ void poll_console_input() {
 				int bytes_sent = ppchat_send(g_client_socket, message, (int) strlen(message), NULL);
 				if (bytes_sent == SOCKET_ERROR) {
 					int error = get_last_socket_error();
-					exit_with_error("Couldn't send message to '%s:%s'. Error: %d - %s", g_connected_server_ip, g_connected_server_port, error, get_error_description(error));
+					exit_with_error("Couldn't send message to '%s:%s'. Error: %d - %s", g_connected_server_ip, g_connected_server_port, error, get_error_description(error, g_error_message, sizeof(g_error_message)));
 				} else {
 					log("Sent message: \"%s\" (%d bytes).", message, bytes_sent);
 				}
@@ -213,7 +215,7 @@ void poll_console_input() {
 				bool disconnected = ppchat_disconnect(&g_client_socket, SD_SEND, &disconnect_error);
 				if (!disconnected) {
 					int error = get_last_socket_error();
-					exit_with_error("Couldn't shutdown client socket connection with '%s:%s'. Error: %d - %s", g_connected_server_ip, g_connected_server_port, error, get_error_description(error));
+					exit_with_error("Couldn't shutdown client socket connection with '%s:%s'. Error: %d - %s", g_connected_server_ip, g_connected_server_port, error, get_error_description(error, g_error_message, sizeof(g_error_message)));
 				}
 
 				log("Disconnected from '%s:%s'.", g_connected_server_ip, g_connected_server_port);
@@ -239,7 +241,7 @@ void poll_console_input() {
 			int bytes_sent = ppchat_send(g_client_socket, input, (int) input_length, NULL);
 			if (bytes_sent == SOCKET_ERROR) {
 				int error = get_last_socket_error();
-				exit_with_error("Couldn't send message to '%s:%s'. Error: %d - %s", g_connected_server_ip, g_connected_server_port, error, get_error_description(error));
+				exit_with_error("Couldn't send message to '%s:%s'. Error: %d - %s", g_connected_server_ip, g_connected_server_port, error, get_error_description(error, g_error_message, sizeof(g_error_message)));
 			} else {
 				log("Sent message: \"%s\" (%d bytes).", input, bytes_sent);
 			}

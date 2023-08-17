@@ -2,6 +2,8 @@
 
 #include <stdlib.h>
 
+char g_error_message[PPCHAT_ERROR_MESSAGE_BUFFER_SIZE] = { };
+
 bool g_quit = false;
 
 DWORD CALLBACK listen_for_incoming_network_data(void *context) {
@@ -36,7 +38,7 @@ DWORD CALLBACK listen_for_incoming_network_data(void *context) {
                     break;
                 };
                 default: {
-                    log_error("Couldn't receive network data. Error: %d - %s", error, get_error_description(error));
+                    log_error("Couldn't receive network data. Error: %d - %s", error, get_error_description(error, g_error_message, sizeof(g_error_message)));
                 };
             }
 
@@ -63,7 +65,7 @@ DWORD CALLBACK listen_for_incoming_network_data(void *context) {
             int send_result = ppchat_send(socket, receive_buffer, bytes_received, 0);
             if (send_result == SOCKET_ERROR) {
                 int error = get_last_socket_error();
-                log_error("Couldn't send message to '%s'. Error: %d - %s", ctx->client_ip, error, get_error_description(error));
+                log_error("Couldn't send message to '%s'. Error: %d - %s", ctx->client_ip, error, get_error_description(error, g_error_message, sizeof(g_error_message)));
                 ppchat_close_socket(&socket);
             }
 
@@ -90,19 +92,19 @@ DWORD CALLBACK listen_for_incoming_connections(void *context) {
         /* Result array        */ &server
     );
     if (server_address_info_result != 0) {
-        exit_with_error("Couldn't get server address info. Error: %d - %s", server_address_info_result, get_error_description(server_address_info_result));
+        exit_with_error("Couldn't get server address info. Error: %d - %s", server_address_info_result, get_error_description(server_address_info_result, g_error_message, sizeof(g_error_message)));
     }
 
     Socket listen_socket = ppchat_create_socket(server->ai_family, server->ai_socktype, server->ai_protocol);
     if (listen_socket.handle == INVALID_SOCKET) {
         int error = get_last_socket_error();
-        exit_with_error("Couldn't create listen socket. Error: %d - %s", error, get_error_description(error));
+        exit_with_error("Couldn't create listen socket. Error: %d - %s", error, get_error_description(error, g_error_message, sizeof(g_error_message)));
     }
 
     int bind_result = ppchat_bind(listen_socket, server->ai_addr, (int) server->ai_addrlen);
     if (bind_result == SOCKET_ERROR) {
         int error = get_last_socket_error();
-        exit_with_error("Couldn't bind listen socket. Error: %d - %s", error, get_error_description(error));
+        exit_with_error("Couldn't bind listen socket. Error: %d - %s", error, get_error_description(error, g_error_message, sizeof(g_error_message)));
     }
 
     ppchat_freeaddrinfo(server);
@@ -110,7 +112,7 @@ DWORD CALLBACK listen_for_incoming_connections(void *context) {
     int listen_result = ppchat_listen(listen_socket, SOMAXCONN);
     if (listen_result == SOCKET_ERROR) {
         int error = get_last_socket_error();
-        exit_with_error("Couldn't listen on listen socket. Error: %d - %s", error, get_error_description(error));
+        exit_with_error("Couldn't listen on listen socket. Error: %d - %s", error, get_error_description(error, g_error_message, sizeof(g_error_message)));
     }
 
 
@@ -120,14 +122,14 @@ DWORD CALLBACK listen_for_incoming_connections(void *context) {
         Socket client_socket = ppchat_accept(listen_socket, (sockaddr *) &client_address, &client_address_size);
         if (client_socket.handle == INVALID_SOCKET) {
             int error = get_last_socket_error();
-            exit_with_error("Couldn't accept client connection. Error: %d - %s", error, get_error_description(error));
+            exit_with_error("Couldn't accept client connection. Error: %d - %s", error, get_error_description(error, g_error_message, sizeof(g_error_message)));
         }
 
         char client_ip[INET6_ADDRSTRLEN] = { };
         const char *client_ip_result = ppchat_inet_ntop(hints.ai_family, &client_address.sin_addr, client_ip, sizeof(client_ip));
         if (client_ip_result != client_ip) {
             int error = get_last_socket_error();
-            exit_with_error("Couldn't convert client network address to text form. Error: %d - %s", error, get_error_description(error));
+            exit_with_error("Couldn't convert client network address to text form. Error: %d - %s", error, get_error_description(error, g_error_message, sizeof(g_error_message)));
         }
 
         log("New connection from client '%s'.", client_ip);
