@@ -197,8 +197,8 @@ Socket ppchat_connect(const char *server_ip, const char *server_port, int *out_e
 	return socket;
 }
 
-bool ppchat_disconnect(Socket connection_socket, int disconnect_method, int *out_error) {
-	int shutdown_result = shutdown(connection_socket.handle, SD_SEND);
+bool ppchat_disconnect(Socket *socket, int disconnect_method, int *out_error) {
+	int shutdown_result = shutdown(socket->handle, SD_SEND);
 	
 	if (out_error)
 		*out_error = shutdown_result;
