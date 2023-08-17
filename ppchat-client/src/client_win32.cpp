@@ -278,6 +278,19 @@ int main(int arguments_count, char *arguments[]) {
 		/* Thread ID           */ &input_thread_id
 	);
 
+	{
+		// Get local time.
+		tm local_time = get_current_local_time();
+		char time[32] = { };
+		errno_t time_result = asctime_s(time, sizeof(time), &local_time);
+		
+		// Remove new line character at the end.
+		size_t time_length = strlen(time);
+		time[time_length - 1] = '\0';
+		
+		log("Client have been started at %s.", time);
+	}
+
 	while (!g_quit) {
 		poll_console_input();
 		Sleep(10);
