@@ -189,6 +189,53 @@ Socket ppchat_connect_with_hints(const char *server_ip, const char *server_port,
 
 	return socket;
 }
+
+char *ppchat_ipv4_binary_to_string(uint32_t ipv4_binary, char *out_ipv4_string, size_t out_ipv4_string_size, bool network_byte_order) {
+	assert(out_ipv4_string != NULL);
+	assert(out_ipv4_string_size >= 15);
+
+	uint8_t byte1 = ((ipv4_binary & 0xFF000000U) >> 24);
+	uint8_t byte2 = ((ipv4_binary & 0x00FF0000U) >> 16);
+	uint8_t byte3 = ((ipv4_binary & 0x0000FF00U) >> 8);
+	uint8_t byte4 =   ipv4_binary & 0x000000FFU;
+
+	if (network_byte_order) {
+		snprintf(out_ipv4_string, out_ipv4_string_size, "%u.%u.%u.%u", byte1, byte2, byte3, byte4);
+	} else {
+		snprintf(out_ipv4_string, out_ipv4_string_size, "%u.%u.%u.%u", byte4, byte3, byte2, byte1);
+	}
+	
+	return out_ipv4_string;
+}
+
+char *ppchat_hton_bytes(char *host_bytes, size_t host_bytes_count, char *out_network_bytes, size_t out_network_bytes_count) {
+	int host_byte_index = host_bytes_count - 1;
+	int network_byte_index = 0; 
+	
+	while (host_byte_index >= 0 && network_byte_index < out_network_bytes_count) {
+		out_network_bytes[network_byte_index] = host_bytes[host_byte_index];
+
+		host_byte_index -= 1;
+		network_byte_index += 1;
+	}
+	
+	return out_network_bytes;
+}
+
+char *ppchat_ntoh_bytes(char *network_bytes, size_t network_bytes_count, char *out_host_bytes, size_t out_host_bytes_count) {
+	int network_byte_index = 0; 
+	int host_byte_index = out_host_bytes_count - 1;
+
+	while (network_byte_index < network_bytes_count && host_byte_index >= 0) {
+		out_host_bytes[host_byte_index] = network_bytes[network_byte_index];
+
+		network_byte_index += 1;
+		host_byte_index -= 1;
+	}
+
+	return out_host_bytes;
+}
+
 Socket ppchat_connect(const char *server_ip, const char *server_port, int *out_error) {
 	Socket socket;
 	socket.handle = INVALID_SOCKET;

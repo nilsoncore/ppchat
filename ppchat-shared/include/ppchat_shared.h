@@ -90,7 +90,29 @@ typedef struct SocketContext {
 	char client_ip[INET6_ADDRSTRLEN];
 } SocketContext;
 
+// Host-to-Network byte order conversion.
+inline uint16_t ppchat_hton16(uint16_t host_value) { return htons(host_value); }
+inline uint32_t ppchat_hton32(uint32_t host_value) { return htonl(host_value); }
+inline uint64_t ppchat_hton64(uint64_t host_value) { return htonll(host_value); }
+inline float    ppchat_htonf(float host_value)     { return htonf(host_value); }
+inline double   ppchat_htond(double host_value)    { return htond(host_value); }
+
+// Network-to-Host byte order conversion.
+inline uint16_t ppchat_ntoh16(uint16_t network_value) { return ntohs(network_value); }
+inline uint32_t ppchat_ntoh32(uint32_t network_value) { return ntohl(network_value); }
+inline uint64_t ppchat_ntoh64(uint64_t network_value) { return ntohll(network_value); }
+inline float    ppchat_ntohf(float network_value)     { return ntohf(network_value); }
+inline double   ppchat_ntohf(double network_value)    { return ntohd(network_value); }
+
 extern "C" {
+
+PPCHAT_API char *ppchat_ipv4_binary_to_string(uint32_t ipv4_binary, char *out_ipv4_string, size_t out_ipv4_string_size, bool network_byte_order);
+
+// Host-to-Network byte order conversion of arbitraty size.
+PPCHAT_API char *ppchat_hton_bytes(char *host_bytes, size_t host_bytes_count, char *out_network_bytes, size_t out_network_bytes_count);
+
+// Network-to-Host byte order conversion of arbitrary size.
+PPCHAT_API char *ppchat_ntoh_bytes(char *network_bytes, size_t network_bytes_count, char *out_host_bytes, size_t out_host_bytes_count);
 
 PPCHAT_API InputQueue create_input_queue(size_t max_items, size_t item_size);
 PPCHAT_API bool get_next_queue(InputQueue *queue, char **out_queue);
