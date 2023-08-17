@@ -20,64 +20,37 @@
 // Parameters inside escape enclosings:
 //     "38;2;R;G;B" - sets foreground color to RGB;
 //     "0" - resets all effects.
-#define CONSOLE_COLOR_RED    "\x1b[38;2;255;100;100m"
-#define CONSOLE_COLOR_YELLOW "\x1b[38;2;255;255;130m"
-#define CONSOLE_COLOR_GRAY   "\x1b[38;2;130;130;130m"
-#define CONSOLE_COLOR_RESET  "\x1b[0m"
+#define PPCHAT_CONSOLE_COLOR_RED    "\x1b[38;2;255;100;100m"
+#define PPCHAT_CONSOLE_COLOR_YELLOW "\x1b[38;2;255;255;130m"
+#define PPCHAT_CONSOLE_COLOR_GRAY   "\x1b[38;2;130;130;130m"
+#define PPCHAT_CONSOLE_COLOR_RESET  "\x1b[0m"
 
-// This is a hacky macro that prints log message into standard out with timestamp as prefix.
-// It could be done in normal function but it would require two passes to
-// format the log message and then format that log message with timestamp.
-#define log(format, ...) {                       \
-    tm __my_log_time = get_current_local_time(); \
-    log_message(                                 \
-        stdout,                                  \
-        "[%02d:%02d:%02d] " format "\n",         \
-        __my_log_time.tm_hour,                   \
-        __my_log_time.tm_min,                    \
-        __my_log_time.tm_sec,                    \
-        __VA_ARGS__                              \
-    );                                           \
+// This is a hacky macro helper function that prints formatted message
+// with timestamp into a specified stream.  The expected types are:
+// _ppchat_log(FILE *stream, const char *prefix, const char *timestamp_suffix, const char *suffix, const char *format, ...)
+// WARNING: prefix, timestamp_suffix, and suffix parameters must not contain
+// any formatting specifiers as it would break the macro!
+#define _ppchat_log(stream, prefix, timestamp_suffix, suffix, format, ...) { \
+    tm __my_log_time = get_current_local_time();                             \
+    log_message(                                                             \
+        stream,                                                              \
+        prefix "[%02d:%02d:%02d] " timestamp_suffix format suffix,           \
+        __my_log_time.tm_hour,                                               \
+        __my_log_time.tm_min,                                                \
+        __my_log_time.tm_sec,                                                \
+        __VA_ARGS__                                                          \
+    );                                                                       \
 }
 
-// Same as `log(format, ...)` macro, but prints into standard error.
-#define log_warning(format, ...) {               \
-    tm __my_log_time = get_current_local_time(); \
-    log_message(                                 \
-        stderr,                                  \
-        CONSOLE_COLOR_YELLOW "[%02d:%02d:%02d] WARNING: " format CONSOLE_COLOR_RESET "\n", \
-        __my_log_time.tm_hour,                   \
-        __my_log_time.tm_min,                    \
-        __my_log_time.tm_sec,                    \
-        __VA_ARGS__                              \
-    );                                           \
-}
-
-// Same as `log(format, ...)` macro, but prints into standard error.
-#define log_error(format, ...) {                 \
-	tm __my_log_time = get_current_local_time(); \
-	log_message(                                 \
-        stderr,                                  \
-        CONSOLE_COLOR_RED "[%02d:%02d:%02d] ERROR: " format CONSOLE_COLOR_RESET "\n", \
-        __my_log_time.tm_hour,                   \
-        __my_log_time.tm_min,                    \
-        __my_log_time.tm_sec,                    \
-        __VA_ARGS__                              \
-	);                                           \
-}
+// We have to be very careful with macros since compiler can't type check it.
+// It is aligned so that it is easy to see how many and which arguments are provided.
+//                                          (stream, prefix                     , timestamp_suffix, suffix                         , format, ...        ) 
+#define log(format, ...)         _ppchat_log(stdout, ""                         , ""              ,                            "\n", format, __VA_ARGS__)
+#define log_error(format, ...)   _ppchat_log(stderr, PPCHAT_CONSOLE_COLOR_RED   , "ERROR: "       , PPCHAT_CONSOLE_COLOR_RESET "\n", format, __VA_ARGS__)
+#define log_warning(format, ...) _ppchat_log(stdout, PPCHAT_CONSOLE_COLOR_YELLOW, "WARNING: "     , PPCHAT_CONSOLE_COLOR_RESET "\n", format, __VA_ARGS__)
 
 #ifdef _DEBUG
-#define log_debug(format, ...) {                 \
-    tm __my_log_time = get_current_local_time(); \
-    log_message(                                 \
-        stdout,                                  \
-        CONSOLE_COLOR_GRAY "[%02d:%02d:%02d] DEBUG: " format CONSOLE_COLOR_RESET "\n", \
-        __my_log_time.tm_hour,                   \
-        __my_log_time.tm_min,                    \
-        __my_log_time.tm_sec,                    \
-        __VA_ARGS__                              \
-    );                                           \
-}
+#define log_debug(format, ...)   _ppchat_log(stdout, PPCHAT_CONSOLE_COLOR_GRAY  , "DEBUG: "       , PPCHAT_CONSOLE_COLOR_RESET "\n", format, __VA_ARGS__)
 #else /* _DEBUG */
 #define log_debug(format, ...)
 #endif /* _DEBUG */
@@ -87,7 +60,7 @@
 #define exit_with_error(format, ...) { \
     log_error(format, __VA_ARGS__);    \
     exit_process_with_error();         \
-}                                      \
+}
 
 const char *PPCHAT_DEFAULT_PORT = "1337";
 const int PPCHAT_RECEIVE_BUFFER_SIZE = 4096;
