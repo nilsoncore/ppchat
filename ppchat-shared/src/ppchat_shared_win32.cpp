@@ -181,9 +181,8 @@ Socket ppchat_connect(const char *server_ip, const char *server_port, int *out_e
 
 		int connection_result = connect(socket.handle, server->ai_addr, (int) server->ai_addrlen);
 		if (connection_result == SOCKET_ERROR) {
-			closesocket(socket.handle);
-			error = WSAGetLastError();
-			socket.handle = INVALID_SOCKET;
+			error = get_last_socket_error();
+			ppchat_close_socket(&socket);
 			continue;
 		}
 
@@ -191,6 +190,7 @@ Socket ppchat_connect(const char *server_ip, const char *server_port, int *out_e
 	}
 
 	freeaddrinfo(available_server_addresses);
+
 	if (out_error)
 		*out_error = error;
 
@@ -203,17 +203,17 @@ bool ppchat_disconnect(Socket connection_socket, int disconnect_method, int *out
 	if (out_error)
 		*out_error = shutdown_result;
 
-	closesocket(connection_socket.handle);
-	return shutdown_result != INVALID_SOCKET;
+	ppchat_close_socket(socket);
+	return shutdown_result != SOCKET_ERROR;
 }
 
 int ppchat_receive(Socket socket, char *receive_buffer, int receive_buffer_size, int flags) {
 	return recv(socket.handle, receive_buffer, receive_buffer_size, flags);
 }
 
-int ppchat_close_socket(Socket socket) {
-	socket.handle = INVALID_SOCKET;
-	return closesocket(socket.handle);
+int ppchat_close_socket(Socket *socket) {
+	socket->handle = INVALID_SOCKET;
+	return closesocket(socket->handle);
 }
 
 int ppchat_send(Socket socket, char *send_buffer, int send_buffer_size, int flags) {

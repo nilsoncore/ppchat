@@ -7,7 +7,10 @@ bool g_quit = false;
 DWORD CALLBACK listen_for_incoming_network_data(void *context) {
     SocketContext *ctx = static_cast<SocketContext *>(context);
 
-    if (ctx->socket.handle == INVALID_SOCKET) {
+    // Store the socket handle value locally for now.
+    Socket socket = *ctx->socket;
+
+    if (socket.handle == INVALID_SOCKET) {
         log_error("Couldn't listen for incoming network data because connection socket was invalid.");
         return EXIT_FAILURE;
     }
@@ -17,7 +20,7 @@ DWORD CALLBACK listen_for_incoming_network_data(void *context) {
     int bytes_received = 0;
     do {
         memset(receive_buffer, 0, receive_buffer_size);
-        bytes_received = ppchat_receive(ctx->socket, receive_buffer, receive_buffer_size - 1, NULL);
+        bytes_received = ppchat_receive(socket, receive_buffer, receive_buffer_size - 1, NULL);
         if (bytes_received == SOCKET_ERROR) {
 
             /* An error occured while receiving network data. */
@@ -35,16 +38,16 @@ DWORD CALLBACK listen_for_incoming_network_data(void *context) {
                 default: {
                     log_error("Couldn't receive network data. Error: %d - %s", error, get_error_description(error));
                 };
-
-                ppchat_close_socket(ctx->socket);
             }
+
+            ppchat_close_socket(&socket);
 
         } else if (bytes_received == 0) {
 
             /* Connection was gratefully closed. */
 
             log("Connection with '%s' has been closed.", ctx->client_ip);
-            ppchat_close_socket(ctx->socket);
+            ppchat_close_socket(&socket);
 
         } else {
 
@@ -57,11 +60,11 @@ DWORD CALLBACK listen_for_incoming_network_data(void *context) {
             log("Received %d bytes from '%s'. Message: \"%s\"", bytes_received, ctx->client_ip, receive_buffer);
 
             // Echo back.
-            int send_result = ppchat_send(ctx->socket, receive_buffer, bytes_received, 0);
+            int send_result = ppchat_send(socket, receive_buffer, bytes_received, 0);
             if (send_result == SOCKET_ERROR) {
                 int error = get_last_socket_error();
                 log_error("Couldn't send message to '%s'. Error: %d - %s", ctx->client_ip, error, get_error_description(error));
-                ppchat_close_socket(ctx->socket);
+                ppchat_close_socket(&socket);
             }
 
         }
@@ -130,7 +133,7 @@ DWORD CALLBACK listen_for_incoming_connections(void *context) {
         log("New connection from client '%s'.", client_ip);
 
         SocketContext listen_context;
-        listen_context.socket = client_socket;
+        listen_context.socket = &client_socket;
         memcpy(listen_context.client_ip, client_ip, sizeof(client_ip));
 
         DWORD listen_thread_id;

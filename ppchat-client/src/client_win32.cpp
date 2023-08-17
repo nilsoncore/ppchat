@@ -44,14 +44,15 @@ bool get_next_console_input(char **out_input) {
 DWORD CALLBACK listen_for_incoming_network_data(void *context) {
 	SocketContext *ctx = static_cast<SocketContext *>(context);
 
-	if (ctx->socket.handle == INVALID_SOCKET)
+	if (ctx->socket->handle == INVALID_SOCKET)
 		return EXIT_FAILURE;
 
 	int bytes_received;
 	do {
 		char receive_buffer[PPCHAT_RECEIVE_BUFFER_SIZE];
 		size_t receive_buffer_size = sizeof(receive_buffer);
-		bytes_received = ppchat_receive(ctx->socket, receive_buffer, (int) (receive_buffer_size - 1), NULL);
+		Socket socket = *ctx->socket;
+		bytes_received = ppchat_receive(*ctx->socket, receive_buffer, (int) (receive_buffer_size - 1), NULL);
 		if (bytes_received == SOCKET_ERROR) {
 		
 			/* An error occured while receiving network data. */
@@ -160,7 +161,7 @@ void poll_console_input() {
 					memcpy(g_connected_server_port, server_port, strlen(server_port));
 
 					SocketContext *listen_context = (SocketContext *) calloc(1, sizeof(*listen_context));
-					listen_context->socket = g_client_socket;
+					listen_context->socket = &g_client_socket;
 					memcpy(listen_context->client_ip, server_ip, strlen(server_ip));
 
 					DWORD input_thread_id;
@@ -209,7 +210,7 @@ void poll_console_input() {
 			} else if (strcmp(command, "/disconnect") == 0) {
 
 				int disconnect_error = 0;
-				bool disconnected = ppchat_disconnect(g_client_socket, SD_SEND, &disconnect_error);
+				bool disconnected = ppchat_disconnect(&g_client_socket, SD_SEND, &disconnect_error);
 				if (!disconnected) {
 					int error = get_last_socket_error();
 					exit_with_error("Couldn't shutdown client socket connection with '%s:%s'. Error: %d - %s", g_connected_server_ip, g_connected_server_port, error, get_error_description(error));
@@ -265,7 +266,7 @@ int main(int arguments_count, char *arguments[]) {
 	}
 
 	if (g_client_socket.handle != INVALID_SOCKET)
-		ppchat_close_socket(g_client_socket);
+		ppchat_close_socket(&g_client_socket);
 
 	destroy_input_queue(&g_input_queue);
 

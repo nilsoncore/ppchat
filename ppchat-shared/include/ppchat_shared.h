@@ -85,7 +85,7 @@ typedef struct Socket {
 } Socket;
 
 typedef struct SocketContext {
-	Socket socket;
+	Socket *socket;
 	char client_ip[INET6_ADDRSTRLEN];
 } SocketContext;
 
@@ -111,9 +111,9 @@ PPCHAT_API int ppchat_bind(Socket socket, const sockaddr *address_name, int addr
 PPCHAT_API int ppchat_listen(Socket socket, int max_connections);
 PPCHAT_API Socket ppchat_accept(Socket socket, sockaddr *address, int *address_length);
 PPCHAT_API Socket ppchat_connect(const char *ip, const char *port, int *out_error);
-PPCHAT_API bool ppchat_disconnect(Socket connection_socket, int disconnect_method, int *out_error);
+PPCHAT_API bool ppchat_disconnect(Socket *socket, int disconnect_method, int *out_error);
 PPCHAT_API int ppchat_receive(Socket socket, char *receive_buffer, int receive_buffer_size, int flags);
-PPCHAT_API int ppchat_close_socket(Socket socket);
+PPCHAT_API int ppchat_close_socket(Socket *socket);
 PPCHAT_API int ppchat_send(Socket socket, char *send_buffer, int send_buffer_size, int flags);
 PPCHAT_API int ppchat_getaddrinfo(const char *ip, const char *port, addrinfo *hints, addrinfo **out_addresses);
 PPCHAT_API void ppchat_freeaddrinfo(addrinfo *address_info);
