@@ -1,3 +1,5 @@
+#define _CRT_SECURE_NO_WARNINGS
+
 #include "../../ppchat-shared/include/ppchat_shared.h"
 
 #include <stdlib.h>
@@ -15,6 +17,14 @@ char g_connected_server_port[6] = { };
 time_t g_start_time;
 
 bool g_quit = false;
+
+// Here `message` means a complete TCP message
+// that can consist of multiple packets.
+uint64_t g_total_messages_received = 0;
+uint64_t g_total_messages_sent = 0;
+
+uint64_t g_total_message_bytes_received = 0;
+uint64_t g_total_message_bytes_sent = 0;
 
 DWORD WINAPI handle_incoming_console_input(void *data) {
 	while (!g_quit) {
@@ -81,7 +91,6 @@ DWORD CALLBACK listen_for_incoming_network_data(void *context) {
 				};
 			}
 
-			// ppchat_close_socket(ctx->socket);
 			int disconnect_error;
 			bool disconnected = ppchat_disconnect(&socket, SD_SEND, &disconnect_error);
 			if (!disconnected) {
@@ -94,7 +103,6 @@ DWORD CALLBACK listen_for_incoming_network_data(void *context) {
 		
 			log("Connection with '%s' has been closed.", ctx->client_ip);
 
-			// ppchat_close_socket(ctx->socket);
 			int disconnect_error;
 			bool disconnected = ppchat_disconnect(&socket, SD_SEND, &disconnect_error);
 			if (!disconnected) {
@@ -104,6 +112,9 @@ DWORD CALLBACK listen_for_incoming_network_data(void *context) {
 		} else {
 		
 			/* Network data received. */
+
+			g_total_messages_received += 1;
+			g_total_message_bytes_received += bytes_received;
 
 			// Null-terminate string.
 			int last_character_index = clamp(0, (int) (receive_buffer_size - 1), bytes_received);
@@ -204,13 +215,15 @@ void poll_console_input() {
 					int error = get_last_socket_error();
 					exit_with_error("Couldn't send message to '%s:%s'. Error: %d - %s", g_connected_server_ip, g_connected_server_port, error, get_error_description(error, g_error_message, sizeof(g_error_message)));
 				} else {
+					g_total_messages_sent += 1;
+					g_total_message_bytes_sent += bytes_sent;
+
 					log("Sent message: \"%s\" (%d bytes).", message, bytes_sent);
 				}
 
-
 			} else if (strcmp(command, "/send_file") == 0) {
 
-
+				log_error("Not implemented yet.");
 
 			} else if (strcmp(command, "/disconnect") == 0) {
 
@@ -230,16 +243,98 @@ void poll_console_input() {
 				memset(g_connected_server_ip, 0, sizeof(g_connected_server_ip));
 				memset(g_connected_server_port, 0, sizeof(g_connected_server_port));
 
-			} else if (strcmp(command, "/quit") == 0) {
+			} else if (strcmp(command, "/shutdown") == 0 ||
+			           strcmp(command, "/quit") == 0) {
 
 				g_quit = true;
+				
+				log("Shutting down the client...");
 
-			} 
+			} else if (strcmp(command, "/status") == 0) {
+
+				time_t now = time(NULL);
+				time_t running_time = now - g_start_time;
+
+				char running_time_string[64];
+				running_time_string[0] = '\0';
+				ppchat_append_time_span_to_string(running_time_string, sizeof(running_time_string), running_time);
+
+				char start_time_string[64] = { };
+				size_t written = 0;
+				tm *internal_time_structure = localtime(&g_start_time);
+				tm time_structure = *internal_time_structure;
+				ppchat_get_date_and_time(start_time_string, sizeof(start_time_string), &time_structure, &written);
+
+				char connection_string[128];
+				if (g_client_socket.handle != INVALID_SOCKET) {
+					snprintf(
+						connection_string,
+						sizeof(connection_string),
+						"Currently connected to server '%s:%s'.",
+						g_connected_server_ip,
+						g_connected_server_port
+					);
+				} else {
+					strcpy(connection_string, "Corrently not connected to any server.");
+				}
+
+				char status_message[2048];
+				snprintf(
+					status_message,
+					sizeof(status_message),
+					"Client have been started at %s and is running for %s.\n"
+					"Network info:\n"
+					"\tMessages:\n"
+					"\t\t   received: %llu\n"
+					"\t\t       sent: %llu\n"
+					"\tBytes:\n"
+					"\t\t   received: %llu\n"
+					"\t\t       sent: %llu\n"
+					"%s",
+					start_time_string,
+					running_time_string,
+					g_total_messages_received,
+					g_total_messages_sent,
+					g_total_message_bytes_received,
+					g_total_message_bytes_sent,
+					connection_string
+				);
+
+				log("%s", status_message);
+
+			} else if (strcmp(command, "/help") == 0) {
+
+				char help_message[2048];
+				snprintf(
+					help_message,
+					sizeof(help_message),
+					"Available commands:\n"
+					"\n"
+					"\tNote:\n"
+					"\t<arg> - Required argument.\n"
+					"\t[arg] - Optional argument.\n"
+					"\n"
+					"\t/shutdown, /quit       -  Shuts down the client.\n"
+					"\t/status                -  Prints runtime information.\n"
+					"\t/connect <ip> [port]   -  Connects to specified server.\n"
+					"\t/send <message>        -  Sends message to connected server.\n"
+					"\t/send_file <filepath>  -  Sends file to connected server.\n"
+					"\t/disconenct            -  Disconnects from connected server.\n"
+					"\t/help                  -  Prints help message."
+				);
+
+				log("%s", help_message);
+
+			} else {
+
+				log("Unknown command '%s'. Type '/help' to see all available commands.", command);
+
+			}
 		
 		} else {
 
 			/* Treat non-command input as an argument to implicit /send command. */
-			
+
 			if (g_client_socket.handle == INVALID_SOCKET) {
 				log("You are not connected to any server.");
 				continue;
@@ -291,6 +386,8 @@ int main(int arguments_count, char *arguments[]) {
 		ppchat_close_socket(&g_client_socket);
 
 	destroy_input_queue(&g_input_queue);
+
+	log("Client have been shut down.");
 
 	return EXIT_SUCCESS;
 }
