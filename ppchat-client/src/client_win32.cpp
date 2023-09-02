@@ -149,24 +149,14 @@ void poll_console_input() {
 
 				char *input_argument = strtok_s(NULL, " ", &next_input_token);
 				if (!input_argument) {
-					log("You didn't provide any arguments. Use: \"connect <ip> [port]\", or \"connect <ip:port>\".");
+					log("You didn't provide any arguments. Use: \"/connect <ip> [port]\".");
 					continue;
 				}
 
-				size_t first_colon_position = strcspn(input_argument, ":");
-
-				const char *server_ip;
-				const char *server_port;
-				bool port_colon_found = (first_colon_position != strlen(input_argument));
-				if (port_colon_found) {
-					char *next_argument_token = NULL;
-					server_ip = strtok_s(input_argument, ":", &next_argument_token);
-					server_port = strtok_s(NULL, ":", &next_argument_token);
-				} else {
-					server_ip = input_argument;
-					input_argument = strtok_s(NULL, " ", &next_input_token);
-					server_port = (input_argument) ? input_argument : PPCHAT_DEFAULT_PORT;
-				}
+				const char *server_ip = input_argument;
+				
+				input_argument = strtok_s(NULL, " ", &next_input_token);
+				const char *server_port = (input_argument) ? input_argument : PPCHAT_DEFAULT_PORT;
 
 				int connection_error;
 				g_client_socket = ppchat_connect(server_ip, server_port, &connection_error);
