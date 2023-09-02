@@ -5,6 +5,7 @@
 char g_error_message[PPCHAT_ERROR_MESSAGE_BUFFER_SIZE] = { };
 
 bool g_quit = false;
+bool g_echo_back = false;
 time_t g_start_time;
 
 DWORD CALLBACK listen_for_incoming_network_data(void *context) {
@@ -67,12 +68,15 @@ DWORD CALLBACK listen_for_incoming_network_data(void *context) {
 
 			log("Received %d bytes from '%s'. Message: \"%s\"", bytes_received, ctx->client_ip, receive_buffer);
 
-			// Echo back.
-			int send_result = ppchat_send(socket, receive_buffer, bytes_received, 0);
-			if (send_result == SOCKET_ERROR) {
-				int error = get_last_socket_error();
-				log_error("Couldn't send message to '%s'. Error: %d - %s", ctx->client_ip, error, get_error_description(error, g_error_message, sizeof(g_error_message)));
-				ppchat_close_socket(&socket);
+			if (g_echo_back) {
+				int bytes_sent = ppchat_send(*ctx->socket, receive_buffer, bytes_received, 0);
+				if (bytes_sent == SOCKET_ERROR) {
+					int error = get_last_socket_error();
+					log_error("Couldn't send message to '%s'. Error: %d - %s", ctx->client_ip, error, get_error_description(error, g_error_message, sizeof(g_error_message)));
+					ppchat_close_socket(ctx->socket);
+				}
+
+				log("Sent %d bytes to '%s'. Message: \"%s\"", bytes_sent, ctx->client_ip, receive_buffer);
 			}
 
 		}
@@ -205,9 +209,21 @@ int main(int arguments_count, char *arguments[]) {
 			return EXIT_FAILURE;
 		}
 
-		if (strncmp(input_buffer, "/shutdown", 9) == 0) {
+		if (input_buffer[0] == '/') {
 
-			g_quit = true;
+			if (strcmp(input_buffer, "/shutdown") == 0 ||
+			    strcmp(input_buffer, "/quit") == 0) {
+
+				g_quit = true;
+
+				log("Shutting down the server...");
+
+			} else if (strcmp(input_buffer, "/echo_back") == 0) {
+
+				g_echo_back = !g_echo_back;
+				log("Echo back has been %s.", (g_echo_back) ? "enabled" : "disabled");
+
+			}
 
 		}
 	}
