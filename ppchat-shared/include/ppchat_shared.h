@@ -109,10 +109,10 @@ extern "C" {
 PPCHAT_API char *ppchat_ipv4_binary_to_string(uint32_t ipv4_binary, char *out_ipv4_string, size_t out_ipv4_string_size, bool network_byte_order);
 
 // Host-to-Network byte order conversion of arbitraty size.
-PPCHAT_API char *ppchat_hton_bytes(char *host_bytes, size_t host_bytes_count, char *out_network_bytes, size_t out_network_bytes_count);
+PPCHAT_API void *ppchat_hton_bytes(void *host_bytes, size_t host_bytes_count, void *out_network_bytes, size_t out_network_bytes_count);
 
 // Network-to-Host byte order conversion of arbitrary size.
-PPCHAT_API char *ppchat_ntoh_bytes(char *network_bytes, size_t network_bytes_count, char *out_host_bytes, size_t out_host_bytes_count);
+PPCHAT_API void *ppchat_ntoh_bytes(void *network_bytes, size_t network_bytes_count, void *out_host_bytes, size_t out_host_bytes_count);
 
 PPCHAT_API InputQueue create_input_queue(size_t max_items, size_t item_size);
 PPCHAT_API bool get_next_queue(InputQueue *queue, char **out_queue);

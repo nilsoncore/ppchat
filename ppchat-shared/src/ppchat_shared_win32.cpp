@@ -210,12 +210,15 @@ char *ppchat_ipv4_binary_to_string(uint32_t ipv4_binary, char *out_ipv4_string, 
 	return out_ipv4_string;
 }
 
-char *ppchat_hton_bytes(char *host_bytes, size_t host_bytes_count, char *out_network_bytes, size_t out_network_bytes_count) {
+void *ppchat_hton_bytes(void *host_bytes, size_t host_bytes_count, void *out_network_bytes, size_t out_network_bytes_count) {
 	int host_byte_index = host_bytes_count - 1;
-	int network_byte_index = 0; 
+	int network_byte_index = 0;
+
+	char *host_bytes_array = (char *) host_bytes;
+	char *out_network_bytes_array = (char *) out_network_bytes;
 	
 	while (host_byte_index >= 0 && network_byte_index < out_network_bytes_count) {
-		out_network_bytes[network_byte_index] = host_bytes[host_byte_index];
+		out_network_bytes_array[network_byte_index] = host_bytes_array[host_byte_index];
 
 		host_byte_index -= 1;
 		network_byte_index += 1;
@@ -224,12 +227,15 @@ char *ppchat_hton_bytes(char *host_bytes, size_t host_bytes_count, char *out_net
 	return out_network_bytes;
 }
 
-char *ppchat_ntoh_bytes(char *network_bytes, size_t network_bytes_count, char *out_host_bytes, size_t out_host_bytes_count) {
+void *ppchat_ntoh_bytes(void *network_bytes, size_t network_bytes_count, void *out_host_bytes, size_t out_host_bytes_count) {
 	int network_byte_index = 0; 
 	int host_byte_index = out_host_bytes_count - 1;
 
+	char *network_bytes_array = (char *) network_bytes;
+	char *out_host_bytes_array = (char *) out_host_bytes;
+
 	while (network_byte_index < network_bytes_count && host_byte_index >= 0) {
-		out_host_bytes[host_byte_index] = network_bytes[network_byte_index];
+		out_host_bytes_array[host_byte_index] = network_bytes_array[network_byte_index];
 
 		network_byte_index += 1;
 		host_byte_index -= 1;
