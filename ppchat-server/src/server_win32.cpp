@@ -5,6 +5,7 @@
 char g_error_message[PPCHAT_ERROR_MESSAGE_BUFFER_SIZE] = { };
 
 bool g_quit = false;
+time_t g_start_time;
 
 DWORD CALLBACK listen_for_incoming_network_data(void *context) {
 	SocketContext *ctx = static_cast<SocketContext *>(context);
@@ -181,17 +182,15 @@ int main(int arguments_count, char *arguments[]) {
 		/* Thread ID           */ &listen_thread_id
 	);
 
+	g_start_time = time(NULL);
+
+	// Print startup message.
 	{
-		// Get local time.
-		tm local_time = get_current_local_time();
-		char time[32] = { };
-		errno_t time_result = asctime_s(time, sizeof(time), &local_time);
-
-		// Remove new line character at the end.
-		size_t time_length = strlen(time);
-		time[time_length - 1] = '\0';
-
-		log("Server have been started at %s.", time);
+		char time[64] = { };
+		size_t written = 0;
+		tm *internal_time_structure = localtime(&g_start_time);
+		tm time_structure = *internal_time_structure;
+		log("Server have been started at %s.", ppchat_get_date_and_time(time, sizeof(time), &time_structure, &written));
 	}
 
 	while (!g_quit) {

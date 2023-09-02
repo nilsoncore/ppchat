@@ -144,6 +144,16 @@ PPCHAT_API int ppchat_getaddrinfo(const char *ip, const char *port, addrinfo *hi
 PPCHAT_API void ppchat_freeaddrinfo(addrinfo *address_info);
 PPCHAT_API const char *ppchat_inet_ntop(int address_family, const void *address, char *out_buffer, size_t out_buffer_size);
 
+// Gets fully qualified formatted string representation of date and time.
+PPCHAT_API char *ppchat_get_date_and_time(char *out_buffer, size_t out_buffer_size, tm *time, size_t *out_written);
+
+// Appends formatted time span string with punctuation.
+// First character of `out_buffer` would be set to null-terminating one so that function works properly.
+// (Implementation is done through `strncat`, which requires null-terminated string)
+// Argument `span`, as its name says, is expected to be a difference between two times,
+// not the actual Unix time since 1970.
+PPCHAT_API size_t ppchat_append_time_span_to_string(char *out_buffer, size_t out_buffer_size, time_t span);
+
 }
 
-#endif /* PPCHAT_SHADER_H */
+#endif /* PPCHAT_SHARED_H */

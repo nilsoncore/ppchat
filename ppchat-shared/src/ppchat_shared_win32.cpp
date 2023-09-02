@@ -1,3 +1,5 @@
+#define _CRT_SECURE_NO_WARNINGS
+
 #include "../include/ppchat_shared.h"
 
 #include <stdlib.h>
@@ -361,6 +363,102 @@ void ppchat_freeaddrinfo(addrinfo *address_info) {
 const char *ppchat_inet_ntop(int address_family, const void *address, char *out_buffer, size_t out_buffer_size) {
 	return inet_ntop(address_family, address, out_buffer, out_buffer_size);
 }
+
+char *ppchat_get_date_and_time(char *out_buffer, size_t out_buffer_size, tm *time, size_t *out_written) {
+	assert(out_buffer != NULL);
+	assert(out_buffer_size >= 64);
+
+	// %A - Full weekday name (localized).
+	// %e - Day of the month, space-padded ( 1-31).
+	// %B - Full month name (localized).
+	// %T - HH:MM:SS time format.
+	// %Y - Year.
+	// Source: "https://cplusplus.com/reference/ctime/strftime/"
+	size_t written = strftime(out_buffer, out_buffer_size, "%A, %e %B %T %Y", time);
+	assert(written > 0);
+
+	if (out_written)
+		*out_written = written;
+
+	return out_buffer;
+}
+
+size_t ppchat_append_time_span_to_string(char *out_buffer, size_t out_buffer_size, time_t span) {
+	assert(out_buffer != NULL);
+	assert(out_buffer_size >= 64);
+
+	// Buffer has to be null-terminated to use strncat.
+	out_buffer[0] == '\0';
+
+	/* Format is: "{} day(s), {} hour(s), {} minute(s), and {} second(s)." */
+
+	int days    = (span / (60 * 60 * 24));
+	int hours   = (span / (60 * 60)) % 24;
+	int minutes = (span / 60) % 60;
+	int seconds = span % 60;
+
+	char formatted[32];
+
+	bool append_comma = false;
+
+	char plural;
+
+	size_t written = 0;
+	if (days > 0) {
+		plural = (days != 1) ? 's' : '\0';
+
+		// "{} day(s)"
+		written += snprintf(formatted, sizeof(formatted), "%d day%c", days, plural);
+		strncat(out_buffer, formatted, out_buffer_size);
+		append_comma = true;
+	}
+
+	if (hours > 0) {
+		plural = (hours != 1) ? 's' : '\0';
+
+		if (append_comma) {
+			strncat(out_buffer, ", ", 2);
+			written += 2;
+		}
+
+		// "{} hours(s)"
+		written += snprintf(formatted, sizeof(formatted), "%d hour%c", hours, plural);
+		strncat(out_buffer, formatted, out_buffer_size);
+		append_comma = true;
+	}
+
+	if (minutes > 0) {
+		plural = (minutes != 1) ? 's' : '\0';
+
+		if (append_comma) {
+			strncat(out_buffer, ", ", 2);
+			written += 2;
+		}
+
+		// "{} minutes(s)"
+		written += snprintf(formatted, sizeof(formatted), "%d minute%c", minutes, plural);
+		strncat(out_buffer, formatted, out_buffer_size);
+		append_comma = true;
+	}
+
+	if (seconds > 0) {
+		plural = (seconds != 1) ? 's' : '\0';
+
+		if (append_comma) {
+			strncat(out_buffer, ", ", 2);
+			written += 2;
+		}
+
+		// "{} second(s)"
+		written += snprintf(formatted, sizeof(formatted), "%d second%c", seconds, plural);
+		strncat(out_buffer, formatted, out_buffer_size);
+		append_comma = true;
+	}
+
+	return written;
+}
+
+static int g_processes_attached = 0;
 
 BOOL WINAPI DllMain(HINSTANCE dll_instance, DWORD calling_reason, LPVOID reserved) {
 	switch (calling_reason) {

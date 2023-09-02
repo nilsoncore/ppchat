@@ -12,6 +12,8 @@ char g_error_message[PPCHAT_ERROR_MESSAGE_BUFFER_SIZE] = { };
 char g_connected_server_ip[INET6_ADDRSTRLEN] = { };
 char g_connected_server_port[6] = { };
 
+time_t g_start_time;
+
 bool g_quit = false;
 
 DWORD WINAPI handle_incoming_console_input(void *data) {
@@ -278,17 +280,16 @@ int main(int arguments_count, char *arguments[]) {
 		/* Thread ID           */ &input_thread_id
 	);
 
+	g_start_time = time(NULL);
+
+	// Print startup message.
 	{
-		// Get local time.
-		tm local_time = get_current_local_time();
-		char time[32] = { };
-		errno_t time_result = asctime_s(time, sizeof(time), &local_time);
-		
-		// Remove new line character at the end.
-		size_t time_length = strlen(time);
-		time[time_length - 1] = '\0';
-		
-		log("Client have been started at %s.", time);
+		char time[64] = { };
+		size_t written = 0;
+		tm *internal_time_structure = localtime(&g_start_time);
+		tm time_structure = *internal_time_structure;
+		char *time_str = ppchat_get_date_and_time(time, sizeof(time), &time_structure, &written);
+		log("Client have been started at %s.", time_str);
 	}
 
 	while (!g_quit) {
