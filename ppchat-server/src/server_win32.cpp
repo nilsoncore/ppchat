@@ -10,19 +10,19 @@ DWORD CALLBACK listen_for_incoming_network_data(void *context) {
 	SocketContext *ctx = static_cast<SocketContext *>(context);
 
 	// Store the socket handle value locally for now.
-	Socket socket = *ctx->socket;
+	// Socket socket = *ctx->socket;
 
-	if (socket.handle == INVALID_SOCKET) {
+	if (ctx->socket->handle == INVALID_SOCKET) {
 		log_error("Couldn't listen for incoming network data because connection socket was invalid.");
 		return EXIT_FAILURE;
 	}
-	
+
 	char receive_buffer[PPCHAT_RECEIVE_BUFFER_SIZE + 1];
 	size_t receive_buffer_size = sizeof(receive_buffer);
 	int bytes_received = 0;
 	do {
 		memset(receive_buffer, 0, receive_buffer_size);
-		bytes_received = ppchat_receive(socket, receive_buffer, receive_buffer_size - 1, NULL);
+		bytes_received = ppchat_receive(*ctx->socket, receive_buffer, receive_buffer_size - 1, NULL);
 		if (bytes_received == SOCKET_ERROR) {
 
 			/* An error occured while receiving network data. */
@@ -42,14 +42,19 @@ DWORD CALLBACK listen_for_incoming_network_data(void *context) {
 				};
 			}
 
-			ppchat_close_socket(&socket);
+			ppchat_close_socket(ctx->socket);
 			
 		} else if (bytes_received == 0) {
 
 			/* Connection was gratefully closed. */
 
 			log("Connection with '%s' has been closed.", ctx->client_ip);
-			ppchat_close_socket(&socket);
+
+			int disconnect_error;
+			bool disconnected = ppchat_disconnect(ctx->socket, SD_SEND, &disconnect_error);
+			if (!disconnected) {
+				log_error("Couldn't disconnect from '%s'. Error: %d - %s", ctx->client_ip, disconnect_error, get_error_description(disconnect_error, g_error_message, sizeof(g_error_message)));
+			}
 
 		} else {
 
